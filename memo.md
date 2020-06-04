@@ -151,6 +151,16 @@ $ sudo docker ps -a -q | xargs docker kill | xargs docker rm
   MOV RAX, RSI
   //  RAX←RSI
   </pre>
+  <pre>
+  // メモリから値をロード
+  // RSPの値をアドレスとみなし、そこの値をロードしRAXに保存する
+  MOV RAX, [RSP]
+  
+  // メモリへ値をストア
+  // RAXの値をアドレスとみなし、そこにRSPの値をストア
+  MOV [RAX], RSP
+  </pre>
+
 - ADD: 加算。<br>
   2 つのレジスタを受け取って、その内容を加算し、結果を第 1 引数のレジスタに書き込む。
   <pre>

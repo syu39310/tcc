@@ -2,6 +2,7 @@
 
 // 現在着目しているトークン
 Token *token;
+static struct Node *code[100];
 
 // 入力文字列pをトークナイズしてそれを返す
 void *tokenize(char *user_input) {
@@ -17,6 +18,12 @@ void *tokenize(char *user_input) {
       continue;
     }
     
+    if ('a' <= *p && *p <= 'z') {
+        cur = new_token(TK_IDENT, cur, p++, 1);
+        cur->len = 1;
+        continue;
+    }
+
     // Multi-letter punctuator
     if (startswith(p, "==") || startswith(p, "!=") ||
         startswith(p, "<=") || startswith(p, ">=")) {
@@ -72,6 +79,14 @@ bool consume(char *op) {
   return true;
 }
 
+// 次のトークンが期待している識別子のときには、トークンを1つ読み進めて
+// 次トークンを返す。それ以外の場合にはNULLを返す。
+Token *consume_ident() {
+  if (token->kind != TK_IDENT)
+    return NULL;
+  return token->next;
+}
+
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(char *op) {
@@ -115,7 +130,9 @@ Node *new_num(int val) {
   return node;
 }
 
+Node *stmt();    // new
 Node *expr();
+Node *assign();  // new
 Node *equality();
 Node *relational();
 Node *add();
@@ -123,8 +140,30 @@ Node *mul();
 Node *unary();
 Node *primary();
 
+Node *program() {
+    int i = 0;
+    while (!at_eof())
+        code[i++] = stmt();
+    code[i] = NULL;
+
+    return *code;
+}
+
+Node *stmt() {
+    Node *node = expr();
+    expect(";");
+    return node;
+}
+
 Node *expr() {
-  return equality();
+  return assign();
+}
+
+Node *assign() {
+    Node *node = equality();
+    if (consume("="))
+        node = new_binary(ND_ASSIGN, node, assign());
+    return node;
 }
 
 // equality = relational ("==" relational | "!=" relational)*
@@ -199,6 +238,14 @@ Node *primary() {
     Node *node = expr();
     expect(")");
     return node;
+  }
+
+  Token *tok = consume_ident();
+  if (tok) {
+      Node *node = calloc(1, sizeof(Node));
+      node->kind = ND_LVAR;
+      node->offset = (tok->str[0] - 'a' + 1) * 8;
+      return node;
   }
 
   // そうでなければ数値のはず
