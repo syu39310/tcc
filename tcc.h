@@ -56,10 +56,10 @@ struct Token {
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
 
-// parse.c
+// tokenizer.c
 void *tokenize(char *user_input);
-Token *new_token(TokenKind kind, Token *cur, char *str, int len);
-bool startswith(char *p, char *q);
+
+// parser.c
 struct Node *program();
 
 // codegen.c
