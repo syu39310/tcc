@@ -35,7 +35,7 @@ Token *tokenize(char *user_input) {
       p++;
       continue;
     }
-    
+
     // Multi-letter punctuator
     if (startswith(p, "==") || startswith(p, "!=") ||
         startswith(p, "<=") || startswith(p, ">=")) {
@@ -57,6 +57,12 @@ Token *tokenize(char *user_input) {
     if (strchr(";", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
+    }
+
+    if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
+        cur = new_token(TK_RETURN, cur, p, 6);
+        p += 6;
+        continue;
     }
 
     if (isdigit(*p)) {

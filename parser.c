@@ -16,6 +16,15 @@ bool consume(char *op) {
   return true;
 }
 
+// 次のトークンがreturn文のときには、トークンを1つ読み進めて
+// 真を返す。それ以外の場合には偽を返す。
+bool consume_return() {
+  if (token->kind != TK_RETURN) 
+    return false;
+  token = token->next;
+  return true;
+}
+
 // 次のトークンが期待している識別子のときには、現在のトークン
 // 次トークンを返す。それ以外の場合にはNULLを返す。
 Token *consume_ident() {
@@ -98,8 +107,17 @@ void *program(Token *argToken) {
 }
 
 Node *stmt() {
-    Node *node = expr();
+    Node *node;
+    
+    if (consume_return()) {
+      node = calloc(1, sizeof(Node));
+      node->kind = ND_RETURN;
+      node->lhs = expr();
+    } else {
+      node = expr();
+    }
     expect(";");
+
     return node;
 }
 
