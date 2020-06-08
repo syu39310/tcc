@@ -15,7 +15,7 @@ bool startswith(char *p, char *q) {
 }
 
 // 入力文字列pをトークナイズしてそれを返す
-void *tokenize(char *user_input) {
+Token *tokenize(char *user_input) {
   char *p = user_input;
   Token head;
   head.next = NULL;
@@ -47,6 +47,15 @@ void *tokenize(char *user_input) {
       continue;
     }
 
+    if (strchr("=", *p)) {
+      cur = new_token(TK_RESERVED, cur, p++, 1);
+      continue;
+    }
+
+    if (strchr(";", *p)) {
+      cur = new_token(TK_RESERVED, cur, p++, 1);
+      continue;
+    }
 
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p, 0);
@@ -60,5 +69,5 @@ void *tokenize(char *user_input) {
   }
 
   new_token(TK_EOF, cur, p, 0);
-  token = head.next;
+  return head.next;
 }

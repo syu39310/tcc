@@ -36,14 +36,19 @@ int main(int argc, char **argv) {
   // トークナイズ & パース
   // 結果はcodeに保存される
   user_input = argv[1];
-  tokenize(user_input);
-  struct Node *code[100];
-  *code = program();
+  Token *token = tokenize(user_input);
+  program(token);
   
   // アセンブリの前半部分を出力
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");
   printf("main:\n");
+
+  // プロローグ
+  // 変数26個分の領域を確保する
+  printf("  push rbp\n");
+  printf("  mov rbp, rsp\n");
+  printf("  sub rsp, 208\n");
 
   // 抽象構文木を降りながらコード生成
   for (int i = 0; code[i]; i++) {

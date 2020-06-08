@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct Node *code[100];
+
 // 抽象構文木のノードの種類
 typedef enum {
   ND_ADD, // +
@@ -57,10 +59,10 @@ void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
 
 // tokenizer.c
-void *tokenize(char *user_input);
+Token *tokenize(char *user_input);
 
 // parser.c
-struct Node *program();
+void *program(Token *token);
 
 // codegen.c
 void gen(Node *node);

@@ -2,7 +2,7 @@
 
 // 現在着目しているトークン
 Token *token;
-static struct Node *code[100];
+//static struct Node *code[100];
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
@@ -15,12 +15,14 @@ bool consume(char *op) {
   return true;
 }
 
-// 次のトークンが期待している識別子のときには、トークンを1つ読み進めて
+// 次のトークンが期待している識別子のときには、現在のトークン
 // 次トークンを返す。それ以外の場合にはNULLを返す。
 Token *consume_ident() {
   if (token->kind != TK_IDENT)
     return NULL;
-  return token->next;
+  Token *result = token;
+  token = token->next;
+  return result;
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
@@ -29,7 +31,7 @@ void expect(char *op) {
   if (token->kind != TK_RESERVED ||
       strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
-    error_at(token->str, "'%c'ではありません", op);
+    error_at(token->str, "'%c'ではありません", *op);
   token = token->next;
 }
 
@@ -76,13 +78,14 @@ Node *mul();
 Node *unary();
 Node *primary();
 
-Node *program() {
+// グローバルに置いているcode[]にparse結果を設定する。
+void *program(Token *argToken) {
+    token = argToken;
     int i = 0;
+
     while (!at_eof())
         code[i++] = stmt();
     code[i] = NULL;
-
-    return *code;
 }
 
 Node *stmt() {
