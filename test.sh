@@ -43,7 +43,15 @@ assert 1 '1>=0;'
 assert 1 '1>=1;'
 assert 0 '1>=2;'
 
+# Step:9 １文字のローカル変数
 assert 4 'a = 3;b=1;a + b;'
-assert 14 'a = 3;b = 5 * 6 - 8;a + b / 2;'
+assert 14 'a = 3;
+b = 5 * 6 - 8;
+a + b / 2;'
+
+# Step:10 複数文字のローカル変数
+assert 6 'foo = 1;
+bar = 2 + 3;
+foo + bar;'
 
 echo OK
