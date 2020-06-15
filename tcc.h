@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct Node *code[100];
-
 typedef struct LVar LVar;
 
 // ローカル変数の型
@@ -32,6 +30,8 @@ typedef enum {
   ND_ASSIGN, // =
   ND_RETURN, // return文
   ND_LVAR, // ローカル変数
+  ND_IF, // IF
+  ND_FOR, // FOR, WHILE
   ND_EOF,  // 終端ノード
 } NodeKind;
 
@@ -44,6 +44,7 @@ struct Node {
   Node *rhs;     // 右辺
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
+  Node *next;    // 次のノード(次行、ループの中)
 };
 
 // トークンの種類
@@ -74,7 +75,7 @@ void error(char *fmt, ...);
 Token *tokenize(char *user_input);
 
 // parser.c
-void *program(Token *token);
+Node *program(Token *token);
 
 // codegen.c
 void gen(Node *node);

@@ -97,13 +97,19 @@ Node *unary();
 Node *primary();
 
 // グローバルに置いているcode[]にparse結果を設定する。
-void *program(Token *argToken) {
-    token = argToken;
-    int i = 0;
+Node *program(Token *argToken) {
+  token = argToken;
+  int i = 0;
+  
+  Node head;
+  head.next = NULL;
+  Node *cur = &head;
+  while (!at_eof()) {
+    cur->next = stmt();
+    cur = cur->next;
+  }
 
-    while (!at_eof())
-        code[i++] = stmt();
-    code[i] = NULL;
+  return head.next;
 }
 
 Node *stmt() {
