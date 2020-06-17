@@ -3,6 +3,18 @@
 // 入力プログラム(エラー表示用)
 char *user_input;
 
+void debugPrint(char *val) {
+  fprintf(stderr, "###%s", val);
+}
+
+void debugToken(Token *tok) {
+  fprintf(stderr, "###token: kind[%d], val[%d], str[%s], len[%d]\n", tok->kind, tok->val, tok->str, tok->len);
+}
+
+void debugNode(Node *node) {
+  fprintf(stderr, "###node: kind[%d], val[%d], offset[%d]\n", node->kind, node->val, node->offset);
+}
+
 // エラーを報告するための関数
 // printfと同じ引数を取る
 void error(char *fmt, ...) {
@@ -38,7 +50,6 @@ int main(int argc, char **argv) {
   user_input = argv[1];
   Token *token = tokenize(user_input);
   Node *node = program(token);
-  
   // アセンブリの前半部分を出力
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");

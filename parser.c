@@ -5,15 +5,30 @@ Token *token;
 // ローカル変数
 LVar *locals;
 
-// 次のトークンが期待している記号のときには、トークンを1つ読み進めて
+// 次のトークンが期待値のときには、真を返す。それ以外の場合には偽を返す。
+bool equal(Token *tok, char *op) {
+  return strlen(op) == tok->len &&
+          !strncmp(tok->str, op, tok->len);
+}
+
+// 次のトークンが期待値のときには、トークンを1つ読み進めて
+// 真を返す。それ以外の場合にはエラー。
+Token *skip(char *op) {
+  if (equal(token, op)) {
+    token = token->next;
+    return token;
+  }
+  error_tok(token, "expected '%s'", op);
+}
+
+// 次のトークンが期待値のときには、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
 bool consume(char *op) {
-  if (token->kind != TK_RESERVED ||
-      strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
-    return false;
-  token = token->next;
-  return true;
+  if (equal(token, op)) {
+    token = token->next;
+    return true;
+  }
+  return false;
 }
 
 // 次のトークンがreturn文のときには、トークンを1つ読み進めて
@@ -33,16 +48,6 @@ Token *consume_ident() {
   Token *result = token;
   token = token->next;
   return result;
-}
-
-// 次のトークンが期待している記号のときには、トークンを1つ読み進める。
-// それ以外の場合にはエラーを報告する。
-void expect(char *op) {
-  if (token->kind != TK_RESERVED ||
-      strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
-    error_at(token->str, "'%c'ではありません", *op);
-  token = token->next;
 }
 
 // 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す。
@@ -86,9 +91,9 @@ Node *new_num(int val) {
   return node;
 }
 
-Node *stmt();    // new
+Node *stmt();
 Node *expr();
-Node *assign();  // new
+Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
@@ -97,6 +102,7 @@ Node *unary();
 Node *primary();
 
 // グローバルに置いているcode[]にparse結果を設定する。
+// program = stmt*
 Node *program(Token *argToken) {
   token = argToken;
   int i = 0;
@@ -112,18 +118,61 @@ Node *program(Token *argToken) {
   return head.next;
 }
 
+// stmt    = expr ";"
+//         | "if" "(" expr ")" stmt ("else" stmt)?
+//         | "while" "(" expr ")" stmt
+//         | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//         | ...
 Node *stmt() {
-    Node *node;
-    
+    if (consume("if")) {
+      Node *node = new_node(ND_IF);
+      skip("(");
+      node->cond = expr();
+      skip(")");
+      node->then = stmt();
+      if (consume("else")) {
+        node->els = stmt();
+      }
+      return node;
+    } 
+    if(consume("while")) {
+      Node *node = new_node(ND_FOR);
+      skip("(");
+      node->cond = expr();
+      skip(")");
+      node->then = stmt();
+      return node;
+    } 
+    if(consume("for")) {
+      Node *node = new_node(ND_FOR);
+      skip("(");
+      if (!consume(";")) {
+        node->init = expr();
+        skip(";");
+      }
+      if (!consume(";")) {
+        node->cond = expr();
+        skip(";");
+      }
+      if (!consume(")")) {
+        node->inc = expr();
+        skip(")");
+      }
+      node->then = stmt();
+      
+      return node;
+    } 
+
     if (consume_return()) {
-      node = calloc(1, sizeof(Node));
+      Node *node = calloc(1, sizeof(Node));
       node->kind = ND_RETURN;
       node->lhs = expr();
-    } else {
-      node = expr();
-    }
-    expect(";");
-
+      skip(";");
+      return node;
+    } 
+    Node *node = expr();
+    skip(";");
+    
     return node;
 }
 
@@ -208,7 +257,7 @@ Node *primary() {
   // 次のトークンが"("なら、"(" expr ")"のはず
   if (consume("(")) {
     Node *node = expr();
-    expect(")");
+    skip(")");
     return node;
   }
 

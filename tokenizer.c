@@ -22,6 +22,13 @@ bool is_alnum(char c) {
   return is_alpha(c) || ('0' <= c && c <= '9');
 }
 
+void error_tok(Token *tok, char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  error_at(tok->str, fmt, ap);
+  exit(1);
+}
+
 // 入力文字列pをトークナイズしてそれを返す
 Token *tokenize(char *user_input) {
   char *p = user_input;

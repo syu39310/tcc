@@ -44,6 +44,12 @@ struct Node {
   Node *rhs;     // 右辺
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
+  // "if" or "for" statement
+  Node *cond;    // condition
+  Node *then;
+  Node *els;     // else
+  Node *init;
+  Node *inc;
   Node *next;    // 次のノード(次行、ループの中)
 };
 
@@ -68,10 +74,14 @@ struct Token {
 };
 
 // main.c
+void debugPrint(char *val);
+void debugToken(Token *tok);
+void debugNode(Node *node);
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
 
 // tokenizer.c
+void error_tok(Token *tok, char *fmt, ...);
 Token *tokenize(char *user_input);
 
 // parser.c

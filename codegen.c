@@ -1,5 +1,10 @@
 #include "tcc.h"
 
+static int endIfCnt;
+static int elseCnt;
+static int beginCnt;
+static int endCnt;
+
 void gen_lvel(Node *node) {
   if (node->kind != ND_LVAR)
     error("代入の左辺値が変数ではありません");
@@ -19,6 +24,44 @@ void gen(Node *node) {
     return;
   }
 
+  // 制御文
+  switch (node->kind) {
+    case ND_IF:
+      gen(node->cond);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je  .Lelse%d\n", elseCnt);
+      gen(node->then);
+      printf("  jmp  .LendIf%d\n", endIfCnt);
+      printf(".Lelse%d:\n", elseCnt++);
+      if (node->els) {
+        gen(node->els);
+      }
+      printf(".LendIf%d:\n", endIfCnt++);
+      return;
+    case ND_FOR:
+      if (node->init) {
+        gen(node->init);
+      }
+      printf(".Lbegin%d:\n", beginCnt);
+      if (node->cond) {
+        gen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lend%d\n", endCnt);
+      }
+      if (node->then) {
+        gen(node->then);
+      }
+      if (node->inc) {
+        gen(node->inc);
+      }
+      printf("  jmp .Lbegin%d\n", beginCnt++);
+      printf(".Lend%d:\n", endCnt++);
+      return;
+  }
+
+  // 変数
   switch (node->kind) {
     case ND_NUM:
       printf("  push %d\n", node->val);

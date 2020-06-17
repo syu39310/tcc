@@ -59,4 +59,89 @@ assert 14 'a = 3;
 b = 5 * 6 - 8;
 return a + b / 2;'
 
+# ステップ12: 制御構文を足す
+# if true case
+assert 2 '
+if(1==1)
+  return 2;
+return 3;'
+# if false case
+assert 3 '
+if(1==2)
+  return 2;
+return 3;'
+# if else true
+assert 2 '
+if(1==1)
+  return 2;
+else
+  return 3;'
+# if else false
+assert 3 '
+if(1==2)
+  return 2;
+else
+  return 3;'
+# while
+assert 3 '
+while(1)
+  return 3;'
+assert 3 '
+a = 1;
+while(a<3)
+  a = a+1;
+return a;'
+# for
+assert 3 '
+for (;;)
+  return 3;
+'
+assert 0 '
+for (a=0;;) 
+  return a;
+'
+assert 5 '
+for (a=0;a<5;)
+  a = a + 5;
+return a;
+'
+assert 2 '
+for (a=2;;a=a+1)
+  return a;
+'
+assert 10 '
+for (a=0;a<10;a=a+1)
+  1;
+return a;
+'
+# if-while
+assert 1 '
+a=1;
+if (a=1)
+  while (a=1)
+    return a;
+'
+# if-for
+assert 5 '
+a=1;
+if (a=1) 
+  for (;a < 5;)
+    a = a + 1;
+return a;
+'
+# while-if
+assert 2 '
+a = 1;
+while (a==1)
+  if (a==1)
+    a = a + 1;
+return a;
+'
+# for-if
+assert 3 '
+for (a=0;a < 5; a = a + 1)
+  if (a==3)
+    return a;
+'
+
 echo OK
