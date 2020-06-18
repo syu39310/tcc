@@ -119,11 +119,25 @@ Node *program(Token *argToken) {
 }
 
 // stmt    = expr ";"
+//         | "{" stmt* "}"
 //         | "if" "(" expr ")" stmt ("else" stmt)?
 //         | "while" "(" expr ")" stmt
 //         | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-//         | ...
+//         | "return" expr ";"
 Node *stmt() {
+    if (consume("{")) {
+      Node head;
+      head.next = NULL;
+      Node *cur = &head;
+      while(!consume("}")) {
+        cur->next = stmt();
+        cur = cur->next;
+      }
+      Node *node = new_node(ND_BLOCK);
+      node->body = head.next;
+      return node;
+    }
+    // 制御構文
     if (consume("if")) {
       Node *node = new_node(ND_IF);
       skip("(");
@@ -162,7 +176,7 @@ Node *stmt() {
       
       return node;
     } 
-
+    // return文
     if (consume_return()) {
       Node *node = calloc(1, sizeof(Node));
       node->kind = ND_RETURN;

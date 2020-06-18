@@ -143,5 +143,31 @@ for (a=0;a < 5; a = a + 1)
   if (a==3)
     return a;
 '
+# block
+assert 1 '
+{return 1;}
+'
+assert 3 '
+a = 1;
+if (a = 1) {
+  a = 2;
+  b = 3;
+}
+return 3;
+'
+assert 5 '
+for(a=0; a <= 10; a=a+1) {
+  if (a==2) 
+    b=b+1;
+  if (a==4) 
+    b=b+1;
+  if (a==6) {
+    b=b+1;
+    b=b+1;
+    b=b+1;
+  }
+}
+return b;
+'
 
 echo OK

@@ -15,6 +15,16 @@ void gen_lvel(Node *node) {
 }
 
 void gen(Node *node) {
+  if (node->kind == ND_BLOCK) {
+    Node *cur = node->body;
+    while(cur) {
+      gen(cur);
+      printf("  pop rax\n");
+      cur = cur->next;
+    }
+    return;
+  }
+
   if (node->kind == ND_RETURN) {
     gen(node->lhs);
     printf("  pop rax\n");

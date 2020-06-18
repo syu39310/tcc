@@ -18,21 +18,22 @@ struct LVar {
 
 // 抽象構文木のノードの種類
 typedef enum {
-  ND_ADD, // +
-  ND_SUB, // -
-  ND_MUL, // *
-  ND_DIV, // /
-  ND_EQ,  // ==
-  ND_NE,  // !=
-  ND_LT,  // <
-  ND_LE,  // <=
-  ND_NUM, // 整数
-  ND_ASSIGN, // =
-  ND_RETURN, // return文
-  ND_LVAR, // ローカル変数
-  ND_IF, // IF
-  ND_FOR, // FOR, WHILE
-  ND_EOF,  // 終端ノード
+  ND_ADD,    //00 +
+  ND_SUB,    //01 -
+  ND_MUL,    //02 *
+  ND_DIV,    //03 /
+  ND_EQ,     //04 ==
+  ND_NE,     //05 !=
+  ND_LT,     //06 <
+  ND_LE,     //07 <=
+  ND_NUM,    //08 整数
+  ND_ASSIGN, //09 =
+  ND_RETURN, //10 return文
+  ND_LVAR,   //11 ローカル変数
+  ND_IF,     //12 IF
+  ND_FOR,    //13 FOR, WHILE
+  ND_BLOCK,  //14 BLOCK
+  ND_EOF,    //15 終端ノード
 } NodeKind;
 
 typedef struct Node Node;
@@ -46,10 +47,11 @@ struct Node {
   int offset;    // kindがND_LVARの場合のみ使う
   // "if" or "for" statement
   Node *cond;    // condition
-  Node *then;
+  Node *then;    // if、while、for 中身
   Node *els;     // else
-  Node *init;
-  Node *inc;
+  Node *init;    // if 初期化
+  Node *inc;     // if インクリメント
+  Node *body;    // block 中身
   Node *next;    // 次のノード(次行、ループの中)
 };
 

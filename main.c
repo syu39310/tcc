@@ -4,7 +4,7 @@
 char *user_input;
 
 void debugPrint(char *val) {
-  fprintf(stderr, "###%s", val);
+  fprintf(stderr, "###%s\n", val);
 }
 
 void debugToken(Token *tok) {
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
   printf("  sub rsp, 208\n");
 
   // 抽象構文木を降りながらコード生成
-  for (; node;) {
+  while (node) {
     gen(node);
 
     // 式の評価結果としてスタックに一つの値が残っているはずなので、
