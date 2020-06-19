@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct Token Token;
+typedef struct Node Node;
 typedef struct LVar LVar;
 
 // ローカル変数の型
@@ -18,22 +20,23 @@ struct LVar {
 
 // 抽象構文木のノードの種類
 typedef enum {
-  ND_ADD,    //00 +
-  ND_SUB,    //01 -
-  ND_MUL,    //02 *
-  ND_DIV,    //03 /
-  ND_EQ,     //04 ==
-  ND_NE,     //05 !=
-  ND_LT,     //06 <
-  ND_LE,     //07 <=
-  ND_NUM,    //08 整数
-  ND_ASSIGN, //09 =
-  ND_RETURN, //10 return文
-  ND_LVAR,   //11 ローカル変数
-  ND_IF,     //12 IF
-  ND_FOR,    //13 FOR, WHILE
-  ND_BLOCK,  //14 BLOCK
-  ND_EOF,    //15 終端ノード
+  ND_ADD,     //00 +
+  ND_SUB,     //01 -
+  ND_MUL,     //02 *
+  ND_DIV,     //03 /
+  ND_EQ,      //04 ==
+  ND_NE,      //05 !=
+  ND_LT,      //06 <
+  ND_LE,      //07 <=
+  ND_NUM,     //08 整数
+  ND_ASSIGN,  //09 =
+  ND_RETURN,  //10 return文
+  ND_LVAR,    //11 ローカル変数
+  ND_IF,      //12 IF
+  ND_FOR,     //13 FOR, WHILE
+  ND_BLOCK,   //14 BLOCK
+  ND_FUNCALL, //15 関数呼び出し
+  ND_EOF,     //16 終端ノード
 } NodeKind;
 
 typedef struct Node Node;
@@ -43,6 +46,7 @@ struct Node {
   NodeKind kind; // ノードの型
   Node *lhs;     // 左辺
   Node *rhs;     // 右辺
+  Token *token;     // token
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
   // "if" or "for" statement
@@ -63,8 +67,6 @@ typedef enum {
   TK_RETURN,   // return文
   TK_EOF,      // 入力の終わりを表すトークン
 } TokenKind;
-
-typedef struct Token Token;
 
 // トークン型
 struct Token {

@@ -5,6 +5,13 @@ static int elseCnt;
 static int beginCnt;
 static int endCnt;
 
+char *getTokenStr(Token *token) {
+  char *ret;
+  strncpy(ret, token->str, token->len);
+  ret[token->len] = '\0';
+  return ret;
+}
+
 void gen_lvel(Node *node) {
   if (node->kind != ND_LVAR)
     error("代入の左辺値が変数ではありません");
@@ -22,6 +29,11 @@ void gen(Node *node) {
       printf("  pop rax\n");
       cur = cur->next;
     }
+    return;
+  }
+
+  if (node->kind == ND_FUNCALL) {
+    printf("  call %s\n", getTokenStr(node->token));
     return;
   }
 

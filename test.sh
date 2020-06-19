@@ -4,7 +4,7 @@ assert() {
   input="$2"
 
   ./tcc "$input" > tmp.s
-  cc -o tmp tmp.s
+  cc -o tmp tmp.s external.o
   ./tmp
   actual="$?"
 
@@ -168,6 +168,10 @@ for(a=0; a <= 10; a=a+1) {
   }
 }
 return b;
+'
+# func call
+assert 0 '
+foo();
 '
 
 echo OK
