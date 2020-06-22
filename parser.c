@@ -269,7 +269,7 @@ Node *unary() {
 }
 
 // num
-//  | ident ("(" ")")?
+//  | ident ("(" num? ("," num)?* ")")?
 //  | "(" expr ")"
 Node *primary() {
   // 次のトークンが"("なら、"(" expr ")"のはず
@@ -281,10 +281,21 @@ Node *primary() {
 
   Token *tok = consume_ident();
   if (tok) {
-      if (consume("(") && consume(")")) {
+      if (consume("(")) {
+        Node *args[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
+        for (int i=0; i <= 6; i++) {
+          if (consume(")")) {
+            break;
+          } if (i != 0) {
+            skip(",");
+          }
+          args[i] = new_num(expect_number(), token);
+        }
         Node *node = new_node(ND_FUNCALL, tok);
+        node->args = args;
         return node;
       }
+
       Node *node = calloc(1, sizeof(Node));
       node->kind = ND_LVAR;
 

@@ -5,6 +5,10 @@ static int elseCnt;
 static int beginCnt;
 static int endCnt;
 
+void debugComment(char *val) {
+  printf("#%s\n", val);
+}
+
 char *getTokenStr(Token *token) {
   char *ret;
   strncpy(ret, token->str, token->len);
@@ -33,6 +37,19 @@ void gen(Node *node) {
   }
 
   if (node->kind == ND_FUNCALL) {
+    if (node->args[0]) 
+      printf("  mov rdi, %d\n", node->args[0]->val);
+    if (node->args[1]) 
+      printf("  mov rsi, %d\n", node->args[1]->val);
+    if (node->args[2]) 
+      printf("  mov rdx, %d\n", node->args[2]->val);
+    if (node->args[3]) 
+      printf("  mov rcx, %d\n", node->args[3]->val);
+    if (node->args[4]) 
+      printf("  mov r8, %d\n", node->args[4]->val);
+    if (node->args[5]) 
+      printf("  mov r9, %d\n", node->args[5]->val);
+
     printf("  call %s\n", getTokenStr(node->token));
     return;
   }

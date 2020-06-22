@@ -174,4 +174,24 @@ assert 0 '
 foo();
 '
 
+# func call args
+assert 0 '
+foo1(1);
+'
+assert 0 '
+foo2(1, 2);
+'
+assert 0 '
+foo3(1, 2, 3);
+'
+assert 0 '
+foo4(1, 2, 3, 4);
+'
+assert 0 '
+foo5(1, 2, 3, 4, 5);
+'
+assert 0 '
+foo6(1, 2, 3, 4, 5, 6);
+'
+
 echo OK

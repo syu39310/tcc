@@ -56,6 +56,7 @@ struct Node {
   Node *init;    // if 初期化
   Node *inc;     // if インクリメント
   Node *body;    // block 中身
+  Node **args;  // function 引数
   Node *next;    // 次のノード(次行、ループの中)
 };
 
