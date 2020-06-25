@@ -1,9 +1,6 @@
 #include "tcc.h"
 
-static int endIfCnt;
-static int elseCnt;
-static int beginCnt;
-static int endCnt;
+static int labelseq;
 
 void debugComment(char *val) {
   printf("#%s\n", val);
@@ -50,7 +47,22 @@ void gen(Node *node) {
     if (node->args[5]) 
       printf("  mov r9, %d\n", node->args[5]->val);
 
+    int seq = labelseq++;
+    debugComment("call start");
+    printf("  mov rax, rsp\n");
+    printf("  and rax, 15\n");
+    printf("  jnz .L.call.%d\n", seq);
+    printf("  mov rax, 0\n");
     printf("  call %s\n", getTokenStr(node->token));
+    printf("  jmp .L.end.%d\n", seq);
+    printf(".L.call.%d:\n", seq);
+    printf("  sub rsp, 8\n");
+    printf("  mov rax, 0\n");
+    printf("  call %s\n", getTokenStr(node->token));
+    printf("  add rsp, 8\n");
+    printf(".L.end.%d:\n", seq);
+    printf("  push rax\n");
+    debugComment("call end");
     return;
   }
 
@@ -66,38 +78,46 @@ void gen(Node *node) {
   // 制御文
   switch (node->kind) {
     case ND_IF:
-      gen(node->cond);
-      printf("  pop rax\n");
-      printf("  cmp rax, 0\n");
-      printf("  je  .Lelse%d\n", elseCnt);
-      gen(node->then);
-      printf("  jmp  .LendIf%d\n", endIfCnt);
-      printf(".Lelse%d:\n", elseCnt++);
-      if (node->els) {
-        gen(node->els);
-      }
-      printf(".LendIf%d:\n", endIfCnt++);
-      return;
-    case ND_FOR:
-      if (node->init) {
-        gen(node->init);
-      }
-      printf(".Lbegin%d:\n", beginCnt);
-      if (node->cond) {
+      {
+        int seqElse = labelseq++;
+        int seqEndIf = labelseq++;
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je .Lend%d\n", endCnt);
-      }
-      if (node->then) {
+        printf("  je  .Lelse%d\n", seqElse);
         gen(node->then);
+        printf("  jmp  .LendIf%d\n", seqEndIf);
+        printf(".Lelse%d:\n", seqElse++);
+        if (node->els) {
+          gen(node->els);
+        }
+        printf(".LendIf%d:\n", seqEndIf);
+        return;
       }
-      if (node->inc) {
-        gen(node->inc);
+    case ND_FOR:
+      {
+        int seqBegin = labelseq++;
+        int seqEnd = labelseq++;
+        if (node->init) {
+          gen(node->init);
+        }
+        printf(".Lbegin%d:\n", seqBegin);
+        if (node->cond) {
+          gen(node->cond);
+          printf("  pop rax\n");
+          printf("  cmp rax, 0\n");
+          printf("  je .Lend%d\n", seqEnd);
+        }
+        if (node->then) {
+          gen(node->then);
+        }
+        if (node->inc) {
+          gen(node->inc);
+        }
+        printf("  jmp .Lbegin%d\n", seqBegin);
+        printf(".Lend%d:\n", seqEnd);
+        return;
       }
-      printf("  jmp .Lbegin%d\n", beginCnt++);
-      printf(".Lend%d:\n", endCnt++);
-      return;
   }
 
   // 変数
