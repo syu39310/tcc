@@ -3,16 +3,32 @@
 // 入力プログラム(エラー表示用)
 char *user_input;
 
-void debugPrint(char *val) {
+void debug_print(char *val) {
   fprintf(stderr, "###%s\n", val);
 }
 
-void debugToken(Token *tok) {
-  fprintf(stderr, "###token: kind[%d], val[%d], str[%s], len[%d]\n", tok->kind, tok->val, tok->str, tok->len);
+void debug_token(Token *tok) {
+  if (tok) {
+    fprintf(stderr, "###token: kind[%d], val[%d], str[%s], len[%d]\n", tok->kind, tok->val, tok->str, tok->len);
+  } else {
+    fprintf(stderr, "###Token is NULL\n");
+  }
 }
 
-void debugNode(Node *node) {
-  fprintf(stderr, "###node: kind[%d], val[%d], offset[%d]\n", node->kind, node->val, node->offset);
+void debug_func(Function *func) {
+  if (func) {
+    fprintf(stderr, "###func: name[%s]\n", func->name);
+  } else {
+    fprintf(stderr, "###Function is NULL\n");
+  }
+}
+
+void debug_node(Node *node) {
+  if (node) {
+    fprintf(stderr, "###node: kind[%d], val[%d], offset[%d]\n", node->kind, node->val, node->offset);
+  } else {
+    fprintf(stderr, "###Node is NULL\n");
+  }
 }
 
 // エラーを報告するための関数
@@ -39,9 +55,16 @@ void error_at(char *loc, char *fmt, ...) {
   exit(1);
 }
 
+char *get_token_str(Token *token) {
+  char *ret;
+  strncpy(ret, token->str, token->len);
+  ret[token->len] = '\0';
+  return ret;
+}
+
 int main(int argc, char **argv) {
   if (argc != 2) {
-    error("引数の個数が正しくありません");
+    error("引数の個数が正しくありません。 [%d]%s, %s, %s", argc, argv[0], argv[1], argv[2]);
     return 1;
   }
 
@@ -49,32 +72,36 @@ int main(int argc, char **argv) {
   // 結果はcodeに保存される
   user_input = argv[1];
   Token *token = tokenize(user_input);
-  Node *node = program(token);
+  Function *func = parse(token);
   // アセンブリの前半部分を出力
   printf(".intel_syntax noprefix\n");
-  printf(".global main\n");
-  printf("main:\n");
-
-  // プロローグ
-  // 変数26個分の領域を確保する
-  printf("  push rbp\n");
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
-
+  
   // 抽象構文木を降りながらコード生成
-  while (node) {
-    gen(node);
+  while (func) {
+    // プロローグ
+    // 関数の定義
+    printf(".global %s\n", func->name);
+    printf("%s:\n", func->name);
+    // 変数26個分の領域を確保する
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, 208\n");
+    Node *node = func->body;
+    while (node) {
+      gen(node);
 
-    // 式の評価結果としてスタックに一つの値が残っているはずなので、
-    // スタックが煽れない様にポップしておく
-    printf("  pop rax\n");
-    node = node->next;
+      // 式の評価結果としてスタックに一つの値が残っているはずなので、
+      // スタックが煽れない様にポップしておく
+      printf("  pop rax\n");
+      node = node->next;
+    }
+    // エピローグ
+    // 最後の式の結果がRAXに残っているのでそれが返り値になる
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
+    func = func->next;
   }
-
-  // エピローグ
-  // 最後の式の結果がRAXに残っているのでそれが返り値になる
-  printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
-  printf("  ret\n");
+  
   return 0;
 }

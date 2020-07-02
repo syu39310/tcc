@@ -1,20 +1,14 @@
 #include "tcc.h"
 
 static int labelseq;
+static char *argreg[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 
-void debugComment(char *val) {
+void debug_comment(char *val) {
   printf("#%s\n", val);
 }
 
-char *getTokenStr(Token *token) {
-  char *ret;
-  strncpy(ret, token->str, token->len);
-  ret[token->len] = '\0';
-  return ret;
-}
-
 void gen_lvel(Node *node) {
-  if (node->kind != ND_LVAR)
+  if (node->kind != ND_VAR)
     error("代入の左辺値が変数ではありません");
 
   printf("  mov rax, rbp\n");
@@ -34,35 +28,32 @@ void gen(Node *node) {
   }
 
   if (node->kind == ND_FUNCALL) {
-    if (node->args[0]) 
-      printf("  mov rdi, %d\n", node->args[0]->val);
-    if (node->args[1]) 
-      printf("  mov rsi, %d\n", node->args[1]->val);
-    if (node->args[2]) 
-      printf("  mov rdx, %d\n", node->args[2]->val);
-    if (node->args[3]) 
-      printf("  mov rcx, %d\n", node->args[3]->val);
-    if (node->args[4]) 
-      printf("  mov r8, %d\n", node->args[4]->val);
-    if (node->args[5]) 
-      printf("  mov r9, %d\n", node->args[5]->val);
+    printf("  push rax\n");
+    int nargs = 0;
+    for (Node *arg = node->args; arg; arg = arg->next) {
+      printf("  push %d\n", arg->val);
+      nargs++;
+    }
+    for (int i = 1; i <= nargs; i++) {
+      printf("  pop rax\n");
+      printf("  mov %s, rax\n", argreg[nargs - i]);
+    }
+    printf("  pop rax\n");
 
     int seq = labelseq++;
-    debugComment("call start");
     printf("  mov rax, rsp\n");
     printf("  and rax, 15\n");
     printf("  jnz .L.call.%d\n", seq);
     printf("  mov rax, 0\n");
-    printf("  call %s\n", getTokenStr(node->token));
+    printf("  call %s\n", get_token_str(node->token));
     printf("  jmp .L.end.%d\n", seq);
     printf(".L.call.%d:\n", seq);
     printf("  sub rsp, 8\n");
     printf("  mov rax, 0\n");
-    printf("  call %s\n", getTokenStr(node->token));
+    printf("  call %s\n", get_token_str(node->token));
     printf("  add rsp, 8\n");
     printf(".L.end.%d:\n", seq);
     printf("  push rax\n");
-    debugComment("call end");
     return;
   }
 
@@ -125,7 +116,7 @@ void gen(Node *node) {
     case ND_NUM:
       printf("  push %d\n", node->val);
       return;
-    case ND_LVAR:
+    case ND_VAR:
       gen_lvel(node);
       printf("  pop rax\n");
       printf("  mov rax, [rax]\n");
@@ -141,7 +132,6 @@ void gen(Node *node) {
       printf("  push rdi\n");
       return;
   }
-
   gen(node->lhs);
   gen(node->rhs);
 

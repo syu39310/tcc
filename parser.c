@@ -3,7 +3,7 @@
 // 現在着目しているトークン
 Token *token;
 // ローカル変数
-LVar *locals;
+Var *locals;
 
 // 次のトークンが期待値のときには、真を返す。それ以外の場合には偽を返す。
 bool equal(Token *tok, char *op) {
@@ -12,7 +12,7 @@ bool equal(Token *tok, char *op) {
 }
 
 // 次のトークンが期待値のときには、トークンを1つ読み進めて
-// 真を返す。それ以外の場合にはエラー。
+// トークンを返す。それ以外の場合にはエラー。
 Token *skip(char *op) {
   if (equal(token, op)) {
     token = token->next;
@@ -31,38 +31,37 @@ bool consume(char *op) {
   return false;
 }
 
-// 次のトークンがreturn文のときには、トークンを1つ読み進めて
-// 真を返す。それ以外の場合には偽を返す。
-bool consume_return() {
-  if (token->kind != TK_RETURN) 
-    return false;
-  token = token->next;
-  return true;
-}
-
-// 次のトークンが期待している識別子のときには、現在のトークン
-// 次トークンを返す。それ以外の場合にはNULLを返す。
-Token *consume_ident() {
-  if (token->kind != TK_IDENT)
+// 次のトークンが期待しているトークン種類のときには、トークンを読み進めて現在のトークンを返す。
+// それ以外の場合にはNULLを返す。
+Token *consume_kind(TokenKind kind) {
+  if (token->kind != kind) 
     return NULL;
   Token *result = token;
   token = token->next;
   return result;
 }
 
-// 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す。
+// 次のトークンが期待の種類の場合、トークンを1つ読み進めてそのトークンを返す。
 // それ以外の場合にはエラーを報告する。
-int expect_number() {
-  if (token->kind != TK_NUM)
-    error_at(token->str, "数ではありません");
-  int val = token->val;
+Token *expect_kind(TokenKind kind, char *errArg) {
+  if (token->kind != kind)
+    error_at(token->str, "%sではありません", errArg);
+  Token *result = token;
   token = token->next;
-  return val;
+  return result;
+}
+
+int expect_number() {
+  return expect_kind(TK_NUM, "数")->val;
+}
+
+char *expect_ident() {
+  return get_token_str(expect_kind(TK_IDENT, "識別子"));
 }
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
-LVar *find_lvar(Token *tok) {
-  for (LVar *var = locals; var; var = var->next)
+Var *find_var(Token *tok) {
+  for (Var *var = locals; var; var = var->next)
     if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
       return var;
   return NULL;
@@ -92,6 +91,8 @@ Node *new_num(int val, Token *tok) {
   return node;
 }
 
+Function *funcdef();
+Node *compound_stmt();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -103,22 +104,49 @@ Node *unary();
 Node *primary();
 
 // グローバルに置いているcode[]にparse結果を設定する。
-// program = stmt*
-Node *program(Token *argToken) {
+// parse = stmt*
+Function *parse(Token *argToken) {
   token = argToken;
-  int i = 0;
-  
-  Node head;
+
+  Function head;
   head.next = NULL;
-  Node *cur = &head;
+  Function *cur = &head;
   while (!at_eof()) {
-    cur->next = stmt();
+    cur->next = funcdef();
     cur = cur->next;
   }
 
   return head.next;
 }
 
+// funcdef = "int" ident() compound_stmt
+Function *funcdef() {
+  skip("int");
+  Function *func = calloc(1, sizeof(Function));
+  func->name = expect_ident();
+  skip("(");
+  //func->params;
+  skip(")");
+  func->body = compound_stmt();
+  //func->locals;
+  //func->stack_size;
+
+  return func;
+}
+
+// compound_stmt = {stmt*}
+Node *compound_stmt() {
+  skip("{");
+  Node head;
+  head.next = NULL;
+  Node *cur = &head;
+  while (!consume("}")) {
+    cur->next = stmt();
+    cur = cur->next;
+  }
+
+  return head.next;
+}
 // stmt    = expr ";"
 //         | "{" stmt* "}"
 //         | "if" "(" expr ")" stmt ("else" stmt)?
@@ -178,7 +206,7 @@ Node *stmt() {
       return node;
     } 
     // return文
-    if (consume_return()) {
+    if (consume_kind(TK_RETURN)) {
       Node *node = calloc(1, sizeof(Node));
       node->kind = ND_RETURN;
       node->lhs = expr();
@@ -279,37 +307,40 @@ Node *primary() {
     return node;
   }
 
-  Token *tok = consume_ident();
+  Token *tok = consume_kind(TK_IDENT);
   if (tok) {
       if (consume("(")) {
-        Node *args[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
+        Node head;
+        head.next = NULL;
+        Node *cur = &head;
         for (int i=0; i <= 6; i++) {
           if (consume(")")) {
             break;
           } if (i != 0) {
             skip(",");
           }
-          args[i] = new_num(expect_number(), token);
+          cur->next = new_num(expect_number(), token);
+          cur = cur->next;
         }
         Node *node = new_node(ND_FUNCALL, tok);
-        node->args = args;
+        node->args = head.next;
         return node;
       }
 
       Node *node = calloc(1, sizeof(Node));
-      node->kind = ND_LVAR;
+      node->kind = ND_VAR;
 
-      LVar *lvar = find_lvar(tok);
-      if (lvar) {
-        node->offset = lvar->offset;
+      Var *var = find_var(tok);
+      if (var) {
+        node->offset = var->offset;
       } else {
-        lvar = calloc(1, sizeof(LVar));
-        lvar->next = locals;
-        lvar->name = tok->str;
-        lvar->len = tok->len;
-        lvar->offset = locals==NULL ? 0 : locals->offset+8;
-        node->offset = lvar->offset;
-        locals = lvar;
+        var = calloc(1, sizeof(Var));
+        var->next = locals;
+        var->name = tok->str;
+        var->len = tok->len;
+        var->offset = locals==NULL ? 0 : locals->offset+8;
+        node->offset = var->offset;
+        locals = var;
       }
       
       return node;

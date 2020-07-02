@@ -7,12 +7,13 @@
 #include <string.h>
 
 typedef struct Token Token;
+typedef struct Function Function;
 typedef struct Node Node;
-typedef struct LVar LVar;
+typedef struct Var Var;
 
 // ローカル変数の型
-struct LVar {
-  LVar *next; // 次の変数かNull
+struct Var {
+  Var *next; // 次の変数かNull
   char *name; // 変数の名前
   int len;    // 名前の長さ
   int offset; // RBPからのオフセット
@@ -31,7 +32,7 @@ typedef enum {
   ND_NUM,     //08 整数
   ND_ASSIGN,  //09 =
   ND_RETURN,  //10 return文
-  ND_LVAR,    //11 ローカル変数
+  ND_VAR,     //11 変数
   ND_IF,      //12 IF
   ND_FOR,     //13 FOR, WHILE
   ND_BLOCK,   //14 BLOCK
@@ -39,16 +40,24 @@ typedef enum {
   ND_EOF,     //16 終端ノード
 } NodeKind;
 
-typedef struct Node Node;
+struct Function {
+  Function *next;
+  char *name;
+  Var *params;
+
+  Node *body;
+  Var *locals;
+  int stack_size;
+};
 
 // 抽象構文木のノードの型
 struct Node {
   NodeKind kind; // ノードの型
   Node *lhs;     // 左辺
   Node *rhs;     // 右辺
-  Token *token;     // token
+  Token *token;  // token
   int val;       // kindがND_NUMの場合のみ使う
-  int offset;    // kindがND_LVARの場合のみ使う
+  int offset;    // kindがND_VARの場合のみ使う
   // "if" or "for" statement
   Node *cond;    // condition
   Node *then;    // if、while、for 中身
@@ -56,7 +65,7 @@ struct Node {
   Node *init;    // if 初期化
   Node *inc;     // if インクリメント
   Node *body;    // block 中身
-  Node **args;  // function 引数
+  Node *args;   // function 引数
   Node *next;    // 次のノード(次行、ループの中)
 };
 
@@ -79,18 +88,20 @@ struct Token {
 };
 
 // main.c
-void debugPrint(char *val);
-void debugToken(Token *tok);
-void debugNode(Node *node);
+void debug_print(char *val);
+void debug_token(Token *tok);
+void debug_func(Function *func);
+void debug_node(Node *node);
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
+char *get_token_str(Token *token);
 
 // tokenizer.c
 void error_tok(Token *tok, char *fmt, ...);
 Token *tokenize(char *user_input);
 
 // parser.c
-Node *program(Token *token);
+Function *parse(Token *token);
 
 // codegen.c
 void gen(Node *node);
