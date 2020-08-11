@@ -15,19 +15,15 @@ assert() {
     exit 1
   fi
 }
-assert 3 '
-int main(){
-  a = func1();
-  return  a + 2;
-}
-int func1(){
-  return 1;
-}
-'
-assert 0 '
-int main() {
-foo();
-}'
+#assert 5 '
+#int main() {
+#for(a=0; a <= 10; a=a+1) {
+#  if (a==3)  
+#    b=b+1;
+#}
+#b=b+1;
+#return 1;
+#}'
 
 assert 0 "int main(){0;}"
 assert 42 "int main(){42;}"
@@ -57,6 +53,7 @@ assert 1 'int main(){1>=1;}'
 assert 0 'int main(){1>=2;}'
 
 # Step9:１文字のローカル変数
+assert 3 'int main(){a = 3;}'
 assert 4 'int main(){a = 3;b=1;a + b;}'
 assert 14 'int main(){a = 3;
 b = 5 * 6 - 8;

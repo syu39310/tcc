@@ -9,7 +9,7 @@ void debug_print(char *val) {
 
 void debug_token(Token *tok) {
   if (tok) {
-    fprintf(stderr, "###token: kind[%d], val[%d], str[%s], len[%d]\n", tok->kind, tok->val, tok->str, tok->len);
+    fprintf(stderr, "###token: kind[%d], val[%d], str[%s], len[%d]\n", tok->kind, tok->val, get_token_str(tok), tok->len);
   } else {
     fprintf(stderr, "###Token is NULL\n");
   }
@@ -17,7 +17,13 @@ void debug_token(Token *tok) {
 
 void debug_func(Function *func) {
   if (func) {
-    fprintf(stderr, "###func: name[%s]\n", func->name);
+    fprintf(stderr, "###func: name[%s], stack_size[%d]\n", func->name, func->stack_size);
+    fprintf(stderr, "####params\n");
+    for (Var *var = func->params; var; var = var->next)
+      debug_var(var);
+    fprintf(stderr, "####locals\n");
+    for (Var *var = func->locals; var; var = var->next)
+      debug_var(var);
   } else {
     fprintf(stderr, "###Function is NULL\n");
   }
@@ -28,6 +34,14 @@ void debug_node(Node *node) {
     fprintf(stderr, "###node: kind[%d], val[%d], offset[%d]\n", node->kind, node->val, node->offset);
   } else {
     fprintf(stderr, "###Node is NULL\n");
+  }
+}
+
+void debug_var(Var *var) {
+if (var) {
+    fprintf(stderr, "###var: name[%s], len[%d], offset[%d]\n", get_var_name(var), var->len, var->offset);
+  } else {
+    fprintf(stderr, "###Var is NULL\n");
   }
 }
 
@@ -55,11 +69,30 @@ void error_at(char *loc, char *fmt, ...) {
   exit(1);
 }
 
+char *get_str(char *str, int len) {
+  char tmp[len];
+  strncpy(tmp, str, len);
+  tmp[len] = '\0';
+  char *ret;
+  ret = tmp;
+  return ret;
+}
+
 char *get_token_str(Token *token) {
   char *ret;
   strncpy(ret, token->str, token->len);
   ret[token->len] = '\0';
   return ret;
+}
+
+char *get_var_name(Var *var) {
+  return get_str(var->name, var->len);
+}
+
+// Round up `n` to the nearest multiple of `align`. For instance,
+// align_to(5, 8) returns 8 and align_to(11, 8) returns 16.
+static int align_to(int n, int align) {
+  return (n + align - 1) / align * align;
 }
 
 int main(int argc, char **argv) {
@@ -75,31 +108,21 @@ int main(int argc, char **argv) {
   Function *func = parse(token);
   // アセンブリの前半部分を出力
   printf(".intel_syntax noprefix\n");
-  
+  // Assign offsets to local variables.
+
+  for (Function *fn = func; fn; fn = fn->next) {
+    //int offset = 32; // 32 for callee-saved registers
+    int offset = 0;
+    for (Var *var = fn->locals; var; var = var->next) {
+      offset += 8;
+      var->offset = offset;
+    }
+    fn->stack_size = align_to(offset, 16);
+  }
+
   // 抽象構文木を降りながらコード生成
   while (func) {
-    // プロローグ
-    // 関数の定義
-    printf(".global %s\n", func->name);
-    printf("%s:\n", func->name);
-    // 変数26個分の領域を確保する
-    printf("  push rbp\n");
-    printf("  mov rbp, rsp\n");
-    printf("  sub rsp, 208\n");
-    Node *node = func->body;
-    while (node) {
-      gen(node);
-
-      // 式の評価結果としてスタックに一つの値が残っているはずなので、
-      // スタックが煽れない様にポップしておく
-      printf("  pop rax\n");
-      node = node->next;
-    }
-    // エピローグ
-    // 最後の式の結果がRAXに残っているのでそれが返り値になる
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
+    code_gen(func);
     func = func->next;
   }
   

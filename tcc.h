@@ -92,9 +92,11 @@ void debug_print(char *val);
 void debug_token(Token *tok);
 void debug_func(Function *func);
 void debug_node(Node *node);
+void debug_var(Var *var);
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
 char *get_token_str(Token *token);
+char *get_var_name(Var *var);
 
 // tokenizer.c
 void error_tok(Token *tok, char *fmt, ...);
@@ -104,4 +106,4 @@ Token *tokenize(char *user_input);
 Function *parse(Token *token);
 
 // codegen.c
-void gen(Node *node);
+void code_gen(Function *func);
