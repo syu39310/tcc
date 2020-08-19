@@ -91,6 +91,17 @@ Node *new_num(int val, Token *tok) {
   return node;
 }
 
+Var *new_var(Token *tok) {
+  Var *var = calloc(1, sizeof(Var));
+  var->name = get_token_str(tok);
+  var->len =tok->len;
+  return var;
+}
+
+Var *node_to_var(Node *node) {
+  return new_var(node->token);
+}
+
 Function *funcdef();
 Node *compound_stmt();
 Node *stmt();
@@ -119,16 +130,29 @@ Function *parse(Token *argToken) {
   return head.next;
 }
 
-// funcdef = "int" ident() compound_stmt
+// funcdef = "int" ident(assign? (, assign)*?) compound_stmt
 Function *funcdef() {
+  locals = NULL;
   skip("int");
   Function *func = calloc(1, sizeof(Function));
   func->name = expect_ident();
   skip("(");
-  //func->params;
-  skip(")");
+  
+  // params
+  Var head;
+  head.next = NULL;
+  Var *cur = &head;
+  while(!consume(")")) {
+    Node *assign_node = assign();
+    cur->next = node_to_var(assign_node);
+    cur = cur->next;
+    consume(",");
+  }
+  func->params = locals;
+  // body
   func->body = compound_stmt();
-  //func->locals;
+  // locals
+  func->locals = locals;
   //func->stack_size;
 
   return func;
@@ -319,14 +343,13 @@ Node *primary() {
           } if (i != 0) {
             skip(",");
           }
-          cur->next = new_num(expect_number(), token);
+          cur->next = assign();
           cur = cur->next;
         }
         Node *node = new_node(ND_FUNCALL, tok);
         node->args = head.next;
         return node;
       }
-
       Node *node = calloc(1, sizeof(Node));
       node->kind = ND_VAR;
 
@@ -342,7 +365,7 @@ Node *primary() {
         node->offset = var->offset;
         locals = var;
       }
-      
+      node->token = tok;
       return node;
   }
 
