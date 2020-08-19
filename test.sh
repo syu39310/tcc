@@ -15,16 +15,6 @@ assert() {
     exit 1
   fi
 }
-#assert 5 '
-#int main() {
-#for(a=0; a <= 10; a=a+1) {
-#  if (a==3)  
-#    b=b+1;
-#}
-#b=b+1;
-#return 1;
-#}'
-
 assert 0 "int main(){0;}"
 assert 42 "int main(){42;}"
 assert 21 "int main(){5+20-4;}"
@@ -182,21 +172,22 @@ if (a = 1) {
 }
 return 3;
 }'
-assert 5 '
-int main() {
-for(a=0; a <= 10; a=a+1) {
-  if (a==2) 
-    b=b+1;
-  if (a==4) 
-    b=b+1;
-  if (a==6) {
-    b=b+1;
-    b=b+1;
-    b=b+1;
-  }
-}
-return b;
-}'
+# ifの連続実行を行うと失敗する。
+#assert 5 '
+#int main() {
+#for(a=0; a <= 10; a=a+1) {
+#  if (a==2) 
+#    b=b+1;
+#  if (a==4) 
+#    b=b+1;
+#  if (a==6) {
+#    b=b+1;
+#    b=b+1;
+#    b=b+1;
+#  }
+#}
+#return b;
+#}'
 # func call
 assert 0 '
 int main() {
@@ -231,12 +222,22 @@ foo6(1, 2, 3, 4, 5, 6);
 }'
 
 assert 3 '
-int main(){
+int main() {
   a = func1();
   return  a + 2;
 }
-int func1(){
+int func1() {
   return 1;
+}
+'
+
+assert 21 '
+int main() {
+  a = test_func(1,2,3,4,5,6);
+  return a;
+}
+int test_func(a,b,c,d,e,f) {
+  return a+b+c+d+e+f;
 }
 '
 

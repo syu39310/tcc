@@ -8,16 +8,9 @@ void debug_comment(char *val) {
   printf("#%s\n", val);
 }
 
-//static char *reg(int idx) {
-//  static char *r[] = {"%r10", "%r11", "%r12", "%r13", "%r14", "%r15"};
-//  if (idx < 0 || sizeof(r) / sizeof(*r) <= idx)
-//    error("register out of range: %d", idx);
-//  return r[idx];
-//}
-
 void gen_addr(Node *node) {
   if (node->kind == ND_VAR) {
-    printf("  lea rax, [rbp-%d]\n", node->offset);
+    printf("  lea rax, -%d[rbp]\n", node->offset + 8);
     printf("  push rax\n");
     return;
   }
@@ -57,13 +50,11 @@ void code_gen(Function *func) {
   for (Var *var = func->params; var; var = var->next)
     i++;
   for (Var *var = func->params; var; var = var->next)
-    printf("  mov %s, -%d(rbp)\n", argreg[--i], var->offset);
+    printf("  mov -%d[rbp], %s\n", var->offset, argreg[--i]);
 
   Node *node = func->body;
   while (node) {
-    debug_print("body start");
     gen_stmt(node);
-    debug_print("body end");
 
     // 式の評価結果としてスタックに一つの値が残っているはずなので、
     // スタックが煽れない様にポップしておく
@@ -83,24 +74,20 @@ void code_gen(Function *func) {
 }
 
 void gen_stmt(Node *node) {
-  debug_node(node);
   // 制御文
   switch (node->kind) {
     case ND_BLOCK: 
       {
-        debug_print("block start");
         Node *cur = node->body;
         while(cur) {
           gen_stmt(cur);
           printf("  pop rax\n");
           cur = cur->next;
         }
-        debug_print("block end");
         return;
       }
     case ND_IF:
       {
-        debug_print("if start");
         int seqElse = labelseq++;
         int seqEndIf = labelseq++;
         gen_expr(node->cond);
@@ -114,12 +101,10 @@ void gen_stmt(Node *node) {
           gen_expr(node->els);
         }
         printf(".LendIf%d:\n", seqEndIf);
-        debug_print("if end");
         return;
       }
     case ND_FOR:
       {
-        debug_print("for start");
         int seqBegin = labelseq++;
         int seqEnd = labelseq++;
         if (node->init) {
@@ -140,17 +125,14 @@ void gen_stmt(Node *node) {
         }
         printf("  jmp .Lbegin%d\n", seqBegin);
         printf(".Lend%d:\n", seqEnd);
-        debug_print("for end");
         return;
       }
     default:
     {
-      debug_print("default");
       gen_expr(node);
       break;
     }
   }
-  debug_print("gen_stmt end");
 }
 
 void gen_expr(Node *node) {

@@ -9,7 +9,8 @@ void debug_print(char *val) {
 
 void debug_token(Token *tok) {
   if (tok) {
-    fprintf(stderr, "###token: kind[%d], val[%d], str[%s], len[%d]\n", tok->kind, tok->val, get_token_str(tok), tok->len);
+    fprintf(stderr, "###token: kind[%d], val[%d], str[%s], len[%d]\n", tok->kind, tok->val, tok->str, tok->len);
+    //fprintf(stderr, "###token: kind[%d], val[%d], str[%s], len[%d]\n", tok->kind, tok->val, get_token_str(tok), tok->len);
   } else {
     fprintf(stderr, "###Token is NULL\n");
   }
@@ -79,6 +80,9 @@ char *get_str(char *str, int len) {
 }
 
 char *get_token_str(Token *token) {
+  if (token->len ==1) {
+    return get_str(token->str, token->len);
+  }
   char *ret;
   strncpy(ret, token->str, token->len);
   ret[token->len] = '\0';

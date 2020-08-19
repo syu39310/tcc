@@ -117,7 +117,6 @@ Node *primary();
 // グローバルに置いているcode[]にparse結果を設定する。
 // parse = stmt*
 Function *parse(Token *argToken) {
-  locals = NULL;
   token = argToken;
 
   Function head;
@@ -133,6 +132,7 @@ Function *parse(Token *argToken) {
 
 // funcdef = "int" ident(assign? (, assign)*?) compound_stmt
 Function *funcdef() {
+  locals = NULL;
   skip("int");
   Function *func = calloc(1, sizeof(Function));
   func->name = expect_ident();
@@ -143,11 +143,12 @@ Function *funcdef() {
   head.next = NULL;
   Var *cur = &head;
   while(!consume(")")) {
-    cur->next = node_to_var(assign());
+    Node *assign_node = assign();
+    cur->next = node_to_var(assign_node);
     cur = cur->next;
-    skip(",");
+    consume(",");
   }
-  func->params = head.next;
+  func->params = locals;
   // body
   func->body = compound_stmt();
   // locals
@@ -349,7 +350,6 @@ Node *primary() {
         node->args = head.next;
         return node;
       }
-
       Node *node = calloc(1, sizeof(Node));
       node->kind = ND_VAR;
 
@@ -365,7 +365,7 @@ Node *primary() {
         node->offset = var->offset;
         locals = var;
       }
-      
+      node->token = tok;
       return node;
   }
 
